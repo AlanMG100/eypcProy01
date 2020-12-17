@@ -1,4 +1,4 @@
-title "TAREA CUATRO"
+title "PROYECTO UNO"
 	.model small
 	.386
 	.stack 64
@@ -13,9 +13,9 @@ menu6 db "(4) SALIR", 0Dh, 0Ah, "$"
 nombre1 db "ESPARZA FUENTES JORGE LUIS", 0Dh, 0Ah, "$"
 nombre2 db "MORA GONZALEZ ALAN FRANCISCO", 0Dh, 0Ah, "$"
 reloj db "LA HORA ACTUAL ES: ", 0Dh, 0Ah, "$"
-time db "00:00:00 HRS", 0Dh, 0Ah, "$"
+time db "00:00:00:00 HRS", 0Dh, 0Ah, "$"
 fecha db "LA FECHA ACTUAL ES: ", 0Dh, 0Ah, "$"
-total db "00/00/00", 0Dh, 0Ah, "$"
+date db "00/00/0000", 0Dh, 0Ah, "$"
 cronometro db "CRONOMETRO: ", 0Dh, 0Ah, "$"
 tecla db "PRESIONA CUALQUIER TECLA PARA REGRESAR...", 0Dh, 0Ah, "$"
 
@@ -27,23 +27,23 @@ main:
 	mov ds, ax
 
 limpiar:
-	mov ax, 0600h			;LLAMADA A LA FUNCIÓN
+	mov ax, 0600h				;LLAMADA A LA FUNCIÓN
 	mov bh, 07h				;COLOR DE FONDO Y LETRA
-	mov cx, 0000h			;COORDENADAS INICIO
-	mov dx, 184Fh			;COORDENADAS DE FIN 
+	mov cx, 0000h				;COORDENADAS INICIO
+	mov dx, 184Fh				;COORDENADAS DE FIN 
 	int 10h
 
 colorear:
-	mov ax, 0600h			;LLAMADA A LA FUNCIÓN
-	mov bh, 01001111b 		;COLOR DE FONDO Y LETRA
+	mov ax, 0600h				;LLAMADA A LA FUNCIÓN
+	mov bh, 01001111b 			;COLOR DE FONDO Y LETRA
 	mov ch, 0				;PUNTO INICIAL HACIA ABAJO
 	mov cl, 0				;PUNTO INICIAL HACIA LA DERECHA
 	mov dh, 25				;PUNTO FINAL HACIA ABAJO
 	mov dl, 28				;PUNTO FINAL HACIA LA DERECHA
 	int 10h
 
-	mov ax, 0600h			;LLAMADA A LA FUNCIÓN
-	mov bh, 00001110b 		;COLOR DE FONDO Y LETRA
+	mov ax, 0600h				;LLAMADA A LA FUNCIÓN
+	mov bh, 00001110b 			;COLOR DE FONDO Y LETRA
 	mov ch, 0				;PUNTO INICIAL HACIA ABAJO
 	mov cl, 29				;PUNTO INICIAL HACIA LA DERECHA
 	mov dh, 25				;PUNTO FINAL HACIA ABAJO
@@ -97,7 +97,7 @@ leeTeclado:
 	mov ah, 08
 	int 21h
 
-	cmp al,49				;49 = 1d
+	cmp al, 49				;49 = 1d
 	je imprimeReloj
 
 	cmp al, 50				;50 = 2d
@@ -121,8 +121,8 @@ imprimeReloj:
 	int 21h
 
 	repite:					;CICLO INFINITO QUE VA A REPETIRSE HASTA RECIBIR UNA TECLA
-	lea bx, time			;OBTENEMOS LA HORA GUARDANDOLA EN BX 
-	call gettime			;LLAMAMOS A LA FUNCIÓN gettime
+	lea bx, time				;LA VARIABLE time ES "TRANSPORTADA" AL REGISTRO bx
+	call GETTIME 				;LLAMAMOS AL PROCESO GETTIME
 	
 	mov ah, 02h				;POSICIONA EL CURSOR EN:
 	mov bh, 00d
@@ -190,20 +190,17 @@ imprimeFecha:
 	lea dx, fecha
 	int 21h
 
-	mov ah, 2Ah
-	int 21h
+	lea bx, date				;LA VARIABLE date ES "TRANSPORTADA" AL REGISTRO bx
+	call GETDATE				;LLAMAMOS AL PROCESO GETDATE
 
-	lea bx, total			;OBTENEMOS LA HORA GUARDANDOLA EN BX 
-	call gettime			;LLAMAMOS A LA FUNCIÓN gettime
-	
 	mov ah, 02h				;POSICIONA EL CURSOR EN:
 	mov bh, 00d
 	mov dh, 2				;3 CUADROS HACIA ABAJO
 	mov dl, 45				;45 CUADROS HACIA LA DERECHA
 	int 10h
 
-	mov ah, 09h				;IMPRIME LA HORA EN CONSOLA
-	lea dx, total
+	mov ah, 09h				;IMPRIME LA FECHA EN CONSOLA
+	lea dx, date
 	int 21h
 
 	mov ah, 02h				;POSICIONA EL CURSOR EN:
@@ -221,32 +218,90 @@ imprimeFecha:
 
 	jmp limpiar				;HACE UN SALTO HACIA LA ETIQUETA limpiar
 
-gettime proc				;INICIO DE LA FUNCION gettime
+GETTIME proc					;INICIO DEL PROCESO GETTIME
 	push ax					;LO QUE CONTIENE ax SE GUARDA EN LA PILA
 	push cx					;LO QUE CONTIENE bx SE GUARDA EN LA PILA
 
-	mov ah, 2ch
+	mov ah, 2Ch				;INTERRUPCION QUE SIRVE PARA OBTENER LA HORA DEL SISTEMA
 	int 21h
 
-	mov al, ch
-	call convert			;LLAMADA A LA FUNCION convert
-	mov [bx], ax			;SE CONVIERTEN LAS HORAS
+	mov al, ch 				;GUARDAMOS EN AL EL CONTENIDO DE CH, EN ESTE CASO LAS HORAS
+	call CONVERT				;LLAMAMOS AL PROCESO CONVERT
+	mov [bx], ax				;SE MUEVEN LAS HORAS A LA POSICION QUE TIENE [bx]
+						;EJEMPLO 10:00:00:00
+	
+	mov al, cl 				;GUARDAMOS EN AL EL CONTENIDO DE CL, EN ESTE CASO LOS MINUTOS
+	call CONVERT  				;LLAMAMOS AL PROCESO CONVERT
+	mov [bx+3], ax 				;SE MUEVEN LOS MINUTOS A LA POSICION QUE TIENE [bx+3]
+						;EJEMPLO 10:51:00:00
 
-	mov al, cl
-	call convert 			;LLAMADA A LA FUNCION convert
-	mov [bx+3], ax 			;SE CONVIERTEN LOS MINUTOS
+	mov al, dh 				;GUARDAMOS EN AL EL CONTENIDO DE DH, EN ESTE CASO LOS SEGUNDOS
+	call CONVERT 				;LLAMAMOS AL PROCESO CONVERT
+	mov [bx+6], ax 				;SE MUEVEN LOS SEGUNDOS A LA POSICION QUE TIENE [bx+6]
+						;EJEMPLO 10:51:42:00
 
-	mov al, dh 				
-	call convert 			;LLAMADA A LA FUNCION convert
-	mov [bx+6], ax 			;SE CONVIERTEN LOS SEGUNDOS
+	mov al, dl 				;GUARDAMOS EN AL EL CONTENIDO DE DL, EN ESTE CASO LOS MILISEGUNDOS
+	call CONVERT 				;LLAMAMOS AL PROCESO CONVERT
+	mov [bx+9], ax 				;SE MUEVEN LOS MILISEGUNDOS A LA POSICION QUE TIENE [bx+9]
+						;EJEMPLO 10:51:42:12 
 
 	pop cx 					;SACAMOS DE LA PILA cx
 	pop ax					;SACAMOS DE LA PILA ax
 
-	ret 					;RETORNAMOS LOS VALORES OBTENIDOS
-gettime endp
+	ret 					;CERRAMOS EL PROCESO Y CONTINUAMOS CON EL FLUJO DEL PROGRAMA
+GETTIME endp
 
-convert proc 				;INICIO DE LA FUNCION convert
+GETDATE proc 					;INICIO DEL PROCESO GETTIME
+	push ax					;LO QUE CONTIENE ax SE GUARDA EN LA PILA
+	push cx					;LO QUE CONTIENE bx SE GUARDA EN LA PILA
+
+	mov ah, 2Ah 				;INTERRUPCION QUE SIRVE PARA OBTENER LA FECHA DEL SISTEMA
+	int 21h
+
+	mov ax, cx 				;GUARDAMOS EN AX EL CONTENIDO DE CX, EN ESTE CASO EL AÑO
+	mov cx, ax 				;GUARDAMOS EN CX UNA COPIA DE AX PARA EVITAR PROBLEMAS EN EL CODIGO
+
+	AAM					;(ASCII ADJUST AX AFTER MULTIPLY)
+	mov al, 0				;MOVEMOS A AL 0d 
+	AAM					;(ASCII ADJUST AX AFTER MULTIPLY)
+	mov al, ah 				;GUARDAMOS EN AL EL CONTENIDO DE AH = 0
+	or al, 30h 				;PASAMOS DE ASCII A DECIMAL
+	mov [bx+9], al    			;SE MUEVEN LAS UNIDADES DEL AÑO A LA POSICION QUE TIENE [bx+9]
+						;EJEMPLO 00/00/0000
+
+	mov ax, cx 				;LO GUARDADO ANTERIORMENTE ES MOVIDO A AX
+	AAM 					;(ASCII ADJUST AX AFTER MULTIPLY)
+
+	mov al, ah 				;GUARDAMOS EN AL EL CONTENIDO DE AH = 2
+	AAM 					;(ASCII ADJUST AX AFTER MULTIPLY)
+	or al, 30h 				;PASAMOS DE ASCII A DECIMAL
+	mov [bx+8], al 				;SE MUEVEN LAS DECENAS DEL AÑO A LA POSICION QUE TIENE [bx+8]
+						;EJEMPLO 00/00/0020
+
+	mov al, ah 				;GUARDAMOS EN AL EL CONTENIDO DE AH = 0
+	AAM 					;(ASCII ADJUST AX AFTER MULTIPLY)
+	or ax, 3030h 				;PASAMOS DE ASCII A DECIMAL
+	mov [bx+7], ah 				;SE MUEVEN LAS CENTENAS DEL AÑO A LA POSICION QUE TIENE [bx+7]
+	mov [bx+6], al 				;SE MUEVEN LAS UNIDADES DE MILLAR DEL AÑO A LA POSICION QUE TIENE [bx+6]
+						;EJEMPLO 00/00/2020
+
+	mov al, dh 				;GUARDAMOS EN AL EL CONTENIDO DE DH, EN ESTE CASO EL NUMERO DE MES 
+	call CONVERT  				;LLAMAMOS AL PROCESO CONVERT
+	mov [bx+3], ax 				;SE MUEVE EL NUMERO DE MES A LA POSICION QUE CONTIENE [bx+3]
+						;EJEMPLO 00/12/2020
+
+	mov al, dl 				;GUARDAMOS EN AL EL CONTENIDO DE DL, EN ESTE CASO EL NUMERO DEL DÍA
+	call CONVERT 				;LLAMAMOS AL PROCESO CONVERT
+	mov [bx], ax 				;SE MUEVE EL NUMERO DEL DIA A LA POSICION QUE CONTIENE [bx]
+						;EJEMPLO 14/12/2020
+
+	pop cx 					;SACAMOS DE LA PILA cx
+	pop ax					;SACAMOS DE LA PILA ax
+
+	ret 					;CERRAMOS EL PROCESO Y CONTINUAMOS CON EL FLUJO DEL PROGRAMA
+GETDATE endp
+
+CONVERT proc 					;INICIO DE LA FUNCION convert
 	push dx 				;LO QUE CONTIENE dx SE GUARDA EN LA PILA
 
 	mov ah, 0				;UTILIZAMOS ESTAS FUNCIONES PARA PASAR DE ASCII A DECIMAL
@@ -256,13 +311,13 @@ convert proc 				;INICIO DE LA FUNCION convert
 
 	pop dx					;SACAMOS DE LA PILA dx
 	ret 					;RETORNAMOS EL VALOR OBTENIDO
-convert endp
+CONVERT endp
 
 salir:
-	mov ax, 0600h			;LLAMADA A LA FUNCIÓN
+	mov ax, 0600h				;LLAMADA A LA FUNCIÓN
 	mov bh, 07h				;COLOR DE FONDO Y LETRA
-	mov cx, 0000h			;COORDENADAS INICIO
-	mov dx, 184Fh			;COORDENADAS DE FIN 
+	mov cx, 0000h				;COORDENADAS INICIO
+	mov dx, 184Fh				;COORDENADAS DE FIN 
 	int 10h
 
 	mov ah,4Ch
